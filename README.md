@@ -207,3 +207,73 @@ Question-9: find customers who made their first purchase within 7 days of signin
                         				and datediff(MIN(sales.SALE_DATE), customers.signup_date) >= 0 ;
     
 
+Question-10: Identify Monthly New Customers and Returning Customers
+
+                        with first_monthly_sale as(
+                        select 
+                        	customer_id,
+                            min(date_format(sale_date, '%m-%Y')) as first_sale_month
+                            from sales
+                            group by customer_id
+                            order by  min(date_format(sale_date, '%m-%Y'))),
+                            
+                        common_monthly_sale as (   
+                        select 
+                        	  customer_id,
+                            date_format(sale_date, '%m-%Y') as Common_sale_month
+                            from sales
+                            order by customer_id)
+                        select 
+                            first_monthly_sale.customer_id,
+                            first_sale_month,
+                            common_sale_month,
+                        	case when
+                        		first_monthly_sale.first_sale_month = common_monthly_sale.common_sale_month
+                        			then "New Customer"
+                        			else "Returning Customer"
+                        	end as customer_type
+                        from first_monthly_sale
+                        join common_monthly_sale
+                        		on first_monthly_sale.customer_id = common_monthly_sale.customer_id;
+        
+Question-11: Show the numbers of monthly new customers and returining customers
+        
+                            with first_monthly_sale as(
+                    select 
+                    	  customer_id,
+                        min(date_format(sale_date, '%m-%Y')) as first_sale_month
+                        from sales
+                        group by customer_id
+                        order by  min(date_format(sale_date, '%m-%Y'))),
+                        
+                    common_monthly_sale as (   
+                    select 
+                    	  customer_id,
+                        date_format(sale_date, '%m-%Y') as Common_sale_month
+                        from sales
+                        order by customer_id),
+                        
+                        tagged_sale as(
+                    select 
+                        first_monthly_sale.customer_id,
+                        first_sale_month,
+                        common_sale_month,
+                    	case when
+                    		first_monthly_sale.first_sale_month = common_monthly_sale.common_sale_month
+                    			then "New Customer"
+                    			else "Returning Customer"
+                    	end as customer_type
+                    from first_monthly_sale
+                    join common_monthly_sale
+                    		on first_monthly_sale.customer_id = common_monthly_sale.customer_id)
+                            
+                            select 
+                    			  common_sale_month,
+                    				count(distinct 
+                                        case when customer_type = 'New Customer' then customer_id end) as new_customer_count,
+                    				count(distinct
+                    					case when customer_type = 'Returning Customer' then customer_id end) as returning_customer_count
+                                        from tagged_sale
+                    		group by common_sale_month;
+             
+        
